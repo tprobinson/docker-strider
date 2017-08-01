@@ -1,0 +1,52 @@
+version: "3"
+services:
+  nginx:
+    image: jwilder/nginx-proxy:alpine
+    restart: always
+    networks:
+      - frontend
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./volumes/ssl:/etc/nginx/certs
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+
+  strider:
+    image: strider/strider
+    restart: always
+    expose:
+      - 3000
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - ./volumes/strider/repositories:/strider/repositories
+      # Uncomment if using the Docker Runner plugin
+      # - /var/run/docker.sock:/tmp/docker.sock:ro
+    environment:
+      VIRTUAL_HOST: strider.example.com
+      SERVER_NAME: http://strider.example.com
+      CONCURRENT_JOBS: 1
+      DB_URI: mongodb://db
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: 587
+      SMTP_SECURE: "true"
+      SMTP_USER: myuser
+      SMTP_PASS: mysecret
+      SMTP_FROM: Strider noreply@stridercd.com
+      STRIDER_ADMIN_EMAIL: admin@example.com
+      STRIDER_ADMIN_PASSWORD: admin123!
+      STRIDER_PLUGINS: simple-runner bitbucket git github gitlab metadata ssh_deploy webhooks
+
+  db:
+    image: mongo
+    restart: always
+    networks:
+      - backend
+    volumes:
+      - ./volumes/db:/data/db
+
+networks:
+  frontend:
+  backend:
